@@ -5,7 +5,7 @@ agents from guessing their way through [CLI for Microsoft 365](https://pnp.githu
 
 ## The problem
 
-`m365` has **896 commands**. An agent that writes `--pageTitle` instead of `--title` gets a
+`m365` has **897 commands**. An agent that writes `--pageTitle` instead of `--title` gets a
 hard rejection — annoying but harmless. The dangerous failures are the quiet ones:
 
 - `{"error":{}}` — an empty object that hides an HTTP **401**. Usually you are hitting a
@@ -22,7 +22,7 @@ hard rejection — annoying but harmless. The dangerous failures are the quiet o
 `m365 cli completion sh update` writes a complete machine-readable command tree to
 `commands.json` (~250 kB) inside the installed package. That answers *does this command
 exist*, *what is the option called*, and *what are the allowed enum values* — instantly and
-offline, for all 896 commands. It does **not** carry required-vs-optional, descriptions,
+offline, for all 897 commands. It does **not** carry required-vs-optional, descriptions,
 examples or permissions, so `--help` stays mandatory as step two.
 
 ```bash
@@ -81,11 +81,6 @@ scripts/env.sh                     sourced preamble
 
 The skill deliberately carries only what an agent **cannot** find out on its own. Anything
 printed by `m365 <cmd> --help`, or stated in the CLI's own error messages, was audited out.
-
-## Note on language
-
-`SKILL.md` is written in Czech; the tooling and this README are in English. The rules and
-error table translate cleanly if you want an English skill — open an issue.
 
 ## Prerequisites
 

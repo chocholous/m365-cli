@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Ověří prostředí dřív, než z chyby uděláš špatný závěr.
-# rc=1 když selže některá kontrola.
+# Check the environment before drawing the wrong conclusion from an error.
+# rc=1 if any check fails.
 set -uo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,44 +12,44 @@ bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$*"; fail=1; }
 skip() { printf '  \033[33m--\033[0m   %s\n' "$*"; }
 
 echo "== m365 =="
-if [ -x "$M" ]; then ok "lokální binárka, $("$M" version 2>/dev/null)"
-else bad "chybí lokální m365 — 'npm install'"; echo; exit 1; fi
+if [ -x "$M" ]; then ok "local binary, $("$M" version 2>/dev/null)"
+else bad "local m365 missing — run 'npm install'"; echo; exit 1; fi
 
 pkg="$root/node_modules/@pnp/cli-microsoft365"
-inst="$(python3 -c 'import json;print(json.load(open("'"$pkg"'/package.json"))["version"])' 2>/dev/null)"
+inst="$(node -p "require('$pkg/package.json').version" 2>/dev/null)"
 if [ -f "$pkg/commands.json" ]; then
   stamp="$(cat "$pkg/commands.version" 2>/dev/null | tr -d '[:space:]')"
-  if [ "$stamp" = "$inst" ]; then ok "commands.json z verze $inst"
-  else bad "commands.json je z verze ${stamp:-neznámé}, nainstalovaná $inst — 'npm run lookup' ho přegeneruje"; fi
-else skip "commands.json chybí (lookup si ho vygeneruje sám)"; fi
+  if [ "$stamp" = "$inst" ]; then ok "commands.json built from $inst"
+  else bad "commands.json is from ${stamp:-unknown}, installed is $inst — 'npm run lookup' rebuilds it"; fi
+else skip "commands.json missing (lookup generates it on demand)"; fi
 
 echo "== .env =="
 if [ -f "$root/.env" ]; then
   set -a; . "$root/.env"; set +a
-  ok ".env načten"
+  ok ".env loaded"
   for v in M365_ACCOUNT M365_TENANT_ID M365_SPO_ROOT; do
-    if [ -n "${!v:-}" ]; then ok "$v=${!v}"; else bad "$v není nastaven"; fi
+    if [ -n "${!v:-}" ]; then ok "$v=${!v}"; else bad "$v is not set"; fi
   done
-  [ -n "${M365_SITE:-}" ] && ok "M365_SITE=$M365_SITE" || skip "M365_SITE nevyplněn"
-else bad "chybí .env — zkopíruj .env.example"; fi
+  [ -n "${M365_SITE:-}" ] && ok "M365_SITE=$M365_SITE" || skip "M365_SITE not filled in"
+else bad "missing .env — copy .env.example"; fi
 
-echo "== přihlášení =="
+echo "== sign-in =="
 status="$("$M" status --output json 2>&1)"
-who="$(printf '%s' "$status" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("connectedAs",""))' 2>/dev/null)"
+who="$(printf '%s' "$status" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).connectedAs||"")}catch{}})' 2>/dev/null)"
 if [ -n "$who" ]; then
-  ok "přihlášen jako $who"
-  [ -n "${M365_ACCOUNT:-}" ] && [ "$who" != "$M365_ACCOUNT" ] && bad "neshoda s M365_ACCOUNT=$M365_ACCOUNT"
-else bad "nepřihlášen ($status) — 'm365 login'"; fi
+  ok "signed in as $who"
+  [ -n "${M365_ACCOUNT:-}" ] && [ "$who" != "$M365_ACCOUNT" ] && bad "does not match M365_ACCOUNT=$M365_ACCOUNT"
+else bad "not signed in ($status) — run 'm365 login'"; fi
 
 echo "== SharePoint =="
 if [ -n "${M365_SPO_ROOT:-}" ] && [ -n "$who" ]; then
   title="$("$M" spo web get --url "$M365_SPO_ROOT" --output json --query 'Title' 2>&1)"
   case "$title" in
-    *error*|'') bad "$M365_SPO_ROOT nedostupný: $title  (--debug ukáže HTTP status)" ;;
+    *error*|'') bad "$M365_SPO_ROOT unreachable: $title  (--debug reveals the HTTP status)" ;;
     *) ok "$M365_SPO_ROOT → $title" ;;
   esac
-else skip "přeskočeno (chybí M365_SPO_ROOT nebo přihlášení)"; fi
+else skip "skipped (no M365_SPO_ROOT, or not signed in)"; fi
 
 echo
-[ "$fail" -eq 0 ] && echo "Prostředí v pořádku." || echo "Něco nesedí — viz FAIL výše."
+[ "$fail" -eq 0 ] && echo "Environment looks good." || echo "Something is off — see FAIL above."
 exit "$fail"
