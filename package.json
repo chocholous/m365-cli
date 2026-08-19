@@ -1,0 +1,16 @@
+{
+  "name": "m365-cli-skill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Claude Code skill + tooling that stops agents guessing m365 CLI options",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "doctor": "bash scripts/doctor.sh",
+    "lookup": "node scripts/m365-lookup.mjs",
+    "commands:refresh": "m365 cli completion sh update"
+  },
+  "devDependencies": {
+    "@pnp/cli-microsoft365": "^11.10.0"
+  }
+}
