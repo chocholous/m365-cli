@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Answers "does this m365 command exist and how exactly do I call it" offline.
 // All the awkwardness (which of the package's data files to trust, where the help docs
 // live, which documented options the CLI actually rejects) is handled in scripts/lib/.
@@ -6,7 +6,7 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { checkContract, reportAndExit, installedVersion, paths } from './lib/contract.mjs';
-import { loadIndex, resolve, search } from './lib/index.mjs';
+import { loadIndex, resolve, search, withCallShapes } from './lib/index.mjs';
 import { SECTIONS, availableSections, renderSection } from './lib/sections.mjs';
 
 const HELP = `m365-lookup — offline lookup for CLI for Microsoft 365
@@ -54,7 +54,8 @@ if (!found) {
   process.exit(1);
 }
 
-const { command, canonicalName, isAlias, children } = found;
+const { command: rawCommand, canonicalName, isAlias, children } = found;
+const command = rawCommand ? withCallShapes(rawCommand) : null;
 
 if (!command) {
   console.log(`m365 ${parts.join(' ')}\n`);

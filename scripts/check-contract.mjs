@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Standalone contract check: `npm run contract`
 import { checkContract, reportAndExit, installedVersion } from './lib/contract.mjs';
 const v = installedVersion();

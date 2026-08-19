@@ -1,6 +1,6 @@
 // Renders help sections straight from the docs shipped in the package, using the CLI's
 // own markdown renderer. Same text `m365 <cmd> --help <section>` prints, without paying
-// the ~7 s it costs to start the CLI (it loads 1417 command modules first).
+// the ~2.4 s it costs to start the CLI (it loads 1417 command modules first).
 //
 // Section slicing mirrors dist/cli/cli.js getHelpSection().
 

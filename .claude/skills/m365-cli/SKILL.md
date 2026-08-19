@@ -1,8 +1,8 @@
 ---
 name: m365-cli
-description: "Use ALWAYS before running any `m365` command (CLI for Microsoft 365 — SharePoint, Entra, Teams, OneDrive, Planner, Viva). Look the command up with `npm run lookup` instead of guessing option names, confirm destructive commands with the user, and read the error table before concluding a command is wrong."
+description: "Use ALWAYS before running any `m365` command (CLI for Microsoft 365 — SharePoint, Entra, Teams, OneDrive, Planner, Viva). Look the command up with `./lookup` instead of guessing option names, confirm destructive commands with the user, and read the error table before concluding a command is wrong."
 version: 6.0.0
-compatibility: "@pnp/cli-microsoft365 11.10.0 (pinned), node, zsh/bash"
+compatibility: "@pnp/cli-microsoft365 11.10.0 (pinned), bun, zsh/bash"
 user-invocable: true
 ---
 
@@ -21,7 +21,7 @@ the command that discovers each value. `$M` is the local `m365`.
 ## Rule: look it up, never guess
 
 ```bash
-npm run lookup -- spo page add
+./lookup spo page add
 ```
 
 ```
@@ -49,14 +49,14 @@ That is the whole interface:
 
 | | |
 |---|---|
-| `npm run lookup -- <command>` | how to call it — required vs optional, types, enums, flags |
-| `npm run lookup -- <group>` | what commands live under a path |
-| `npm run lookup -- -f <text>` | search names, aliases and descriptions |
-| `npm run lookup -- <command> --examples` | real invocations; also `--remarks`, `--permissions`, `--response` |
+| `./lookup <command>` | how to call it — required vs optional, types, enums, flags |
+| `./lookup <group>` | what commands live under a path |
+| `./lookup -f <text>` | search names, aliases and descriptions |
+| `./lookup <command> --examples` | real invocations; also `--remarks`, `--permissions`, `--response` |
 
 It is instant and offline. **Take its output as given** — it already accounts for the
 places where the CLI's own `--help` is wrong, so you do not need to cross-check with
-`m365 <cmd> --help` (which also costs ~7 s per call).
+`m365 <cmd> --help` (which also costs ~2.4 s per call, against ~67 ms here).
 
 If a command is not there, it does not exist — check the spelling with `-f`.
 
@@ -91,11 +91,11 @@ response is `{"error": …}`.
 
 | Output | Cause | What to do |
 |---|---|---|
-| `Invalid option: 'x'` / `Unrecognized key: "x"` | that option does not exist | `npm run lookup -- <command>` |
+| `Invalid option: 'x'` / `Unrecognized key: "x"` | that option does not exist | `./lookup <command>` |
 | `{"error":{}}` | **a hidden HTTP status**, typically 401 | `--debug 2>&1 \| rg -i '"status"\|www-authenticate'` → usually a SharePoint hostname belonging to a different tenant |
 | `Attempted to perform an unauthorized operation.` | a missing role (SharePoint admin) | permissions, **not** syntax — do not rewrite the command |
 | `{"error":{"name":"ExitPromptError"}}` | destructive command waiting for confirmation, no TTY | it did not run — **ask the user**, do not add `--force` |
-| `Required option not specified` | a required option is missing | `npm run lookup -- <command>` lists them under REQUIRED |
+| `Required option not specified` | a required option is missing | `./lookup <command>` lists them under REQUIRED |
 | empty result | may simply mean not signed in | `npm run doctor` before concluding "there is nothing there" |
 
 **Graph scopes ≠ SharePoint scopes.** The app may hold `AllSites.FullControl` on the

@@ -11,11 +11,15 @@ ok()   { printf '  \033[32mOK\033[0m   %s\n' "$*"; }
 bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$*"; fail=1; }
 skip() { printf '  \033[33m--\033[0m   %s\n' "$*"; }
 
+echo "== runtime =="
+if command -v bun >/dev/null 2>&1; then ok "bun $(bun --version)"
+else bad "bun not found — install it (https://bun.sh); the lookup runs on it"; fi
+
 echo "== m365 =="
 if [ -x "$M" ]; then ok "local binary, $("$M" version 2>/dev/null)"
 else bad "local m365 missing — run 'npm install'"; echo; exit 1; fi
 
-if node "$root/scripts/check-contract.mjs" >/dev/null 2>&1; then
+if bun "$root/scripts/check-contract.mjs" >/dev/null 2>&1; then
   ok "package contract holds (m365-lookup can read the index and help docs)"
 else
   bad "package contract broken — run 'npm run contract' for detail"
@@ -33,7 +37,7 @@ else bad "missing .env — copy .env.example"; fi
 
 echo "== sign-in =="
 status="$("$M" status --output json 2>&1)"
-who="$(printf '%s' "$status" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).connectedAs||"")}catch{}})' 2>/dev/null)"
+who="$(printf '%s' "$status" | bun -e 'const s=await Bun.stdin.text();try{process.stdout.write(JSON.parse(s).connectedAs||"")}catch{}' 2>/dev/null)"
 if [ -n "$who" ]; then
   ok "signed in as $who"
   [ -n "${M365_ACCOUNT:-}" ] && [ "$who" != "$M365_ACCOUNT" ] && bad "does not match M365_ACCOUNT=$M365_ACCOUNT"

@@ -48,20 +48,12 @@ export function loadIndex() {
 
   const byName = new Map();
   for (const c of full) {
-    const shapes = docCallShapes(c.help);
-    const options = c.options
-      .filter((o) => !GLOBAL.has(o.long))
-      .map((o) => ({
-        ...o,
-        // documented shape wins; with no doc entry, only an explicit boolean reads as a flag
-        takesValue: shapes?.has(o.long) ? shapes.get(o.long) : o.type !== 'boolean',
-      }));
     byName.set(c.name, {
       name: c.name,
       description: c.description || '',
       help: c.help || null,
       aliases: c.aliases || [],
-      options,
+      options: c.options.filter((o) => !GLOBAL.has(o.long)),
       output: c.options.find((o) => o.long === 'output')?.autocomplete || null,
     });
   }
@@ -108,6 +100,20 @@ export function resolve(pathParts) {
     canonicalName: canonical,
     isAlias: canonical ? canonical !== pathParts.join(' ') : false,
     children,
+  };
+}
+
+/** Annotate one command's options with whether they take a value. Reads exactly one
+ *  doc file, so it stays off the path of searching and browsing. */
+export function withCallShapes(command) {
+  const shapes = docCallShapes(command.help);
+  return {
+    ...command,
+    options: command.options.map((o) => ({
+      ...o,
+      // documented shape wins; with no doc entry, only an explicit boolean reads as a flag
+      takesValue: shapes?.has(o.long) ? shapes.get(o.long) : o.type !== 'boolean',
+    })),
   };
 }
 

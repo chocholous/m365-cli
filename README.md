@@ -20,7 +20,7 @@ hard rejection — annoying but harmless. The dangerous failures are the quiet o
 One command answers "how do I call this":
 
 ```bash
-npm run lookup -- spo page add
+./lookup spo page add
 ```
 
 ```
@@ -46,10 +46,10 @@ More: --examples --remarks --response
 
 | | |
 |---|---|
-| `npm run lookup -- <command>` | required vs optional, types, enums, flags |
-| `npm run lookup -- <group>` | what lives under a path |
-| `npm run lookup -- -f <text>` | search names, aliases, descriptions |
-| `npm run lookup -- <command> --examples` | also `--remarks`, `--permissions`, `--response` |
+| `./lookup <command>` | required vs optional, types, enums, flags |
+| `./lookup <group>` | what lives under a path |
+| `./lookup -f <text>` | search names, aliases, descriptions |
+| `./lookup <command> --examples` | also `--remarks`, `--permissions`, `--response` |
 
 Instant and offline. There is nothing else to learn — the awkward parts are handled inside
 the tool, and the skill tells the agent to take its output as given.
@@ -58,10 +58,13 @@ the tool, and the skill tells the agent to take its output as given.
 
 Two reasons, both measured against v11.10.0.
 
-**Speed.** A single `m365 <cmd> --help` takes **7–8 seconds** — the CLI loads 1417 command
-modules before printing anything. Reading the same information from the installed package
-takes **~15 ms**. Rendering the complete help for all 877 commands is faster than one
-`--help` call.
+**Speed.** A single `m365 <cmd> --help` takes **~2.4 s** — the CLI loads 1417 command
+modules before printing anything, and even `m365 version` costs the same. `./lookup`
+answers in **~67 ms**, about 36x faster. Getting there meant three things: reading the
+package's own data files instead of spawning the CLI, reading the help doc of the one
+command asked about rather than all 877, and running on [bun](https://bun.sh) invoked
+directly — `npm run` alone adds 213 ms of npm startup, more than the whole lookup, and
+node starts ~33 ms slower than bun.
 
 **Correctness.** `--help` is generated from docs that have drifted from the implementation.
 Verified against the live CLI across every command:
@@ -82,11 +85,11 @@ proving it, in `scripts/verified-exceptions.json`.
 ## Quick start
 
 ```bash
-npm install
+npm install                # installs the pinned CLI for Microsoft 365
 cp .env.example .env       # every value documents the command that discovers it
 $EDITOR .env
 source scripts/env.sh      # loads .env, sets $M
-npm run doctor             # binary, package contract, .env, login, SharePoint reachability
+npm run doctor             # runtime, package contract, .env, login, SharePoint reachability
 ```
 
 ## Pinned on purpose
@@ -101,7 +104,7 @@ whenever the installed version differs from the last one seen, and **fails loudl
 
   - allCommandsFull.json options lost the "required" field
 
-Not falling back to 'm365 --help' on purpose: it would still work, ~500x slower,
+Not falling back to 'm365 --help' on purpose: it would still work, ~36x slower,
 and nobody would notice.
 ```
 
@@ -109,7 +112,7 @@ and nobody would notice.
 
 ```
 .claude/skills/m365-cli/SKILL.md   the skill: two rules, an error→cause table
-scripts/m365-lookup.mjs            the tool
+lookup -> scripts/m365-lookup.mjs  the tool (bun shebang, run it directly)
 scripts/lib/                       index building, help sections, the contract check
 scripts/verified-exceptions.json   corrections to the package index, each with evidence
 scripts/doctor.sh                  environment check
@@ -118,8 +121,9 @@ scripts/env.sh                     sourced preamble
 
 ## Prerequisites
 
-Node.js and a signed-in `m365` (`m365 login`). Verified against `@pnp/cli-microsoft365`
-v11.10.0 on macOS.
+[bun](https://bun.sh) (the lookup runs on it — node works too, ~33 ms slower per call),
+Node.js and npm for installing the pinned CLI, and a signed-in `m365` (`m365 login`).
+Verified against `@pnp/cli-microsoft365` v11.10.0 on macOS. `npm run doctor` checks all of it.
 
 ## License
 

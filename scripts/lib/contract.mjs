@@ -2,14 +2,14 @@
 //
 // None of this is public API. The CLI's public contract is `m365 <cmd> --help`; the files
 // below are implementation detail that pnp may rearrange in any release. We read them
-// anyway because they are ~500x faster than spawning the CLI (a single `--help` costs
-// 7-8 s, dominated by loading 1417 command modules) and because they carry `required`,
+// anyway because they are ~36x faster than spawning the CLI (a single `--help` costs
+// ~2.4 s, dominated by loading 1417 command modules) and because they carry `required`,
 // `type` and `aliases` as structured fields instead of prose to be parsed.
 //
 // The version is pinned exactly in package.json for this reason. That does not remove the
 // risk, it concentrates it into the moment someone bumps the pin -- so this check runs
 // then and FAILS LOUDLY. It deliberately does not fall back to `--help`: a silent
-// fallback would leave everything working, 500x slower, with nobody noticing.
+// fallback would leave everything working, 36x slower, with nobody noticing.
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -100,7 +100,7 @@ export function reportAndExit(bad, version) {
     `\nFix one of:\n` +
     `  - pin package.json back to the version that worked, run 'npm ci'\n` +
     `  - update scripts/lib/contract.mjs and the readers to the new layout\n` +
-    `\nNot falling back to 'm365 --help' on purpose: it would still work, ~500x slower,\n` +
+    `\nNot falling back to 'm365 --help' on purpose: it would still work, ~36x slower,\n` +
     `and nobody would notice.\n`
   );
   process.exit(1);

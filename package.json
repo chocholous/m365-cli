@@ -7,8 +7,8 @@
   "license": "MIT",
   "scripts": {
     "doctor": "bash scripts/doctor.sh",
-    "lookup": "node scripts/m365-lookup.mjs",
-    "contract": "node scripts/check-contract.mjs"
+    "contract": "bun scripts/check-contract.mjs",
+    "lookup": "bun scripts/m365-lookup.mjs"
   },
   "devDependencies": {
     "@pnp/cli-microsoft365": "11.10.0"
