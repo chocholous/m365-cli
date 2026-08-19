@@ -15,13 +15,11 @@ echo "== m365 =="
 if [ -x "$M" ]; then ok "local binary, $("$M" version 2>/dev/null)"
 else bad "local m365 missing — run 'npm install'"; echo; exit 1; fi
 
-pkg="$root/node_modules/@pnp/cli-microsoft365"
-inst="$(node -p "require('$pkg/package.json').version" 2>/dev/null)"
-if [ -f "$pkg/commands.json" ]; then
-  stamp="$(cat "$pkg/commands.version" 2>/dev/null | tr -d '[:space:]')"
-  if [ "$stamp" = "$inst" ]; then ok "commands.json built from $inst"
-  else bad "commands.json is from ${stamp:-unknown}, installed is $inst — 'npm run lookup' rebuilds it"; fi
-else skip "commands.json missing (lookup generates it on demand)"; fi
+if node "$root/scripts/check-contract.mjs" >/dev/null 2>&1; then
+  ok "package contract holds (m365-lookup can read the index and help docs)"
+else
+  bad "package contract broken — run 'npm run contract' for detail"
+fi
 
 echo "== .env =="
 if [ -f "$root/.env" ]; then

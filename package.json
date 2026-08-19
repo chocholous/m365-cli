@@ -8,9 +8,9 @@
   "scripts": {
     "doctor": "bash scripts/doctor.sh",
     "lookup": "node scripts/m365-lookup.mjs",
-    "commands:refresh": "m365 cli completion sh update"
+    "contract": "node scripts/check-contract.mjs"
   },
   "devDependencies": {
-    "@pnp/cli-microsoft365": "^11.10.0"
+    "@pnp/cli-microsoft365": "11.10.0"
   }
 }

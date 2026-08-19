@@ -5,7 +5,7 @@ agents from guessing their way through [CLI for Microsoft 365](https://pnp.githu
 
 ## The problem
 
-`m365` has **897 commands**. An agent that writes `--pageTitle` instead of `--title` gets a
+`m365` has ~900 commands. An agent that writes `--pageTitle` instead of `--title` gets a
 hard rejection — annoying but harmless. The dangerous failures are the quiet ones:
 
 - `{"error":{}}` — an empty object that hides an HTTP **401**. Usually you are hitting a
@@ -15,33 +15,69 @@ hard rejection — annoying but harmless. The dangerous failures are the quiet o
 - `{"error":{"name":"ExitPromptError"}}` — a destructive command asked for confirmation and
   found no TTY. The operation did *not* run. Adding `--force` to "fix" it silently runs it.
 
-## The approach
+## The tool
 
-**Look the command up offline, then read `--help`.** Never one without the other.
-
-`m365 cli completion sh update` writes a complete machine-readable command tree to
-`commands.json` (~250 kB) inside the installed package. That answers *does this command
-exist*, *what is the option called*, and *what are the allowed enum values* — instantly and
-offline, for all 897 commands. It does **not** carry required-vs-optional, descriptions,
-examples or permissions, so `--help` stays mandatory as step two.
+One command answers "how do I call this":
 
 ```bash
-npm run lookup -- spo page add      # exact option names + enums
-m365 spo page add --help full       # required (<>) vs optional ([]), meaning, examples
+npm run lookup -- spo page add
 ```
 
 ```
 m365 spo page add
 
-OPTIONS (exact names; requiredness and meaning are NOT in commands.json):
+  Creates modern page
 
-  --name
-  --webUrl
-  --title
-  --layoutType  = Article | Home | SingleWebPartAppPage | RepostPage | ...
-  --promoteAs   = HomePage | NewsPage | Template
-  ...
+REQUIRED
+  -n, --name <string>
+  -u, --webUrl <string>
+
+OPTIONAL
+  -t, --title <string>
+  -l, --layoutType <Article|Home|SingleWebPartAppPage|RepostPage|...>
+      --publish   (flag, takes no value)
+
+GLOBAL
+      --output <csv|json|md|text|none>
+      --query <JMESPath>
+
+More: --examples --remarks --response
 ```
+
+| | |
+|---|---|
+| `npm run lookup -- <command>` | required vs optional, types, enums, flags |
+| `npm run lookup -- <group>` | what lives under a path |
+| `npm run lookup -- -f <text>` | search names, aliases, descriptions |
+| `npm run lookup -- <command> --examples` | also `--remarks`, `--permissions`, `--response` |
+
+Instant and offline. There is nothing else to learn — the awkward parts are handled inside
+the tool, and the skill tells the agent to take its output as given.
+
+## Why it is not just `m365 --help`
+
+Two reasons, both measured against v11.10.0.
+
+**Speed.** A single `m365 <cmd> --help` takes **7–8 seconds** — the CLI loads 1417 command
+modules before printing anything. Reading the same information from the installed package
+takes **~15 ms**. Rendering the complete help for all 877 commands is faster than one
+`--help` call.
+
+**Correctness.** `--help` is generated from docs that have drifted from the implementation.
+Verified against the live CLI across every command:
+
+| | |
+|---|---|
+| options documented but **rejected** by the CLI | 11 |
+| options the CLI accepts but docs omit | 15 |
+| requiredness disagreements | 5 |
+| casing typos (`--displayname` for `--displayName`) | 2 |
+| commands whose `--output` docs claim five formats but accept two | 59 |
+
+So the tool reads the package's structured command index for names, requiredness, types
+and enums, and the shipped docs only for prose sections and for whether an option takes a
+value. The one option genuinely missing from the index is recorded, with the CLI output
+proving it, in `scripts/verified-exceptions.json`.
 
 ## Quick start
 
@@ -49,43 +85,41 @@ OPTIONS (exact names; requiredness and meaning are NOT in commands.json):
 npm install
 cp .env.example .env       # every value documents the command that discovers it
 $EDITOR .env
-source scripts/env.sh      # loads .env, sets $M, fails loudly if anything is missing
-npm run doctor             # binary, commands.json, .env, login, SharePoint reachability
+source scripts/env.sh      # loads .env, sets $M
+npm run doctor             # binary, package contract, .env, login, SharePoint reachability
 ```
 
-| command | does |
-|---|---|
-| `npm run doctor` | environment check; exits 1 on a failed required check |
-| `npm run lookup -- --help` | lookup modes (tree / options / full-text search) |
-| `npm run commands:refresh` | regenerate the command tree by hand |
+## Pinned on purpose
 
-`scripts/env.sh` works in both zsh and bash, from any directory inside the project.
+The tool reads files inside `@pnp/cli-microsoft365` that are implementation detail, not
+public API. The version is therefore pinned exactly, and `npm run contract` asserts every
+assumption — the index shape, the docs layout, the markdown renderer. It runs automatically
+whenever the installed version differs from the last one seen, and **fails loudly**:
 
-## Why a separate lookup script
+```
+@pnp/cli-microsoft365 11.11.0 does not match what this tooling reads.
 
-`commands.json` carries no version of its own, so the script keeps a `commands.version`
-stamp next to it and compares against the installed package version on every run,
-regenerating on mismatch. A package upgrade or `npm ci` replaces the whole package
-directory, which deletes both files — they are then regenerated on the next lookup. Two
-small file reads per run, no subprocess.
+  - allCommandsFull.json options lost the "required" field
+
+Not falling back to 'm365 --help' on purpose: it would still work, ~500x slower,
+and nobody would notice.
+```
 
 ## What is in here
 
 ```
 .claude/skills/m365-cli/SKILL.md   the skill: two rules, an error→cause table
-scripts/m365-lookup.mjs            offline lookup, zero dependencies
+scripts/m365-lookup.mjs            the tool
+scripts/lib/                       index building, help sections, the contract check
+scripts/verified-exceptions.json   corrections to the package index, each with evidence
 scripts/doctor.sh                  environment check
 scripts/env.sh                     sourced preamble
-.env.example                       config template; each value names its discovery command
 ```
-
-The skill deliberately carries only what an agent **cannot** find out on its own. Anything
-printed by `m365 <cmd> --help`, or stated in the CLI's own error messages, was audited out.
 
 ## Prerequisites
 
-Node.js and a signed-in `m365` (`m365 login`). Verified against
-`@pnp/cli-microsoft365` v11.10.0 on macOS.
+Node.js and a signed-in `m365` (`m365 login`). Verified against `@pnp/cli-microsoft365`
+v11.10.0 on macOS.
 
 ## License
 

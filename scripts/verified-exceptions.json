@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "Corrections to the package's own command index, each verified against the live CLI.",
+    "Keep this file tiny. Every entry must carry evidence and a date; if you cannot show the",
+    "CLI's own output proving the correction, it does not belong here.",
+    "Re-verify after bumping the pinned @pnp/cli-microsoft365 version."
+  ],
+  "verifiedAgainst": "11.10.0",
+  "addOptions": [
+    {
+      "command": "outlook mail searchfolder add",
+      "option": { "long": "sourceFolderIds", "short": null, "required": false, "type": "string" },
+      "evidence": "m365 outlook mail searchfolder add --sourceFolderIds X -> complains only about other required options (folderName, messageFilter), never 'Invalid option: sourceFolderIds'",
+      "verified": "2026-08-19"
+    }
+  ],
+  "_rejected": {
+    "_comment": "Documented in the package's help but NOT accepted by the CLI. Recorded so nobody re-adds them from the docs.",
+    "entries": [
+      { "commands": ["entra m365group report activitycounts", "entra m365group report activitydetail", "entra m365group report activityfilecounts", "entra m365group report activitygroupcounts", "entra m365group report activitystorage"], "option": "outputFile", "cli": "Unrecognized key: \"outputFile\"" },
+      { "commands": ["spfx project externalize"], "option": "outputFile", "cli": "Invalid option: 'outputFile'" },
+      { "commands": ["spo tenant commandset set"], "option": "title", "cli": "Invalid option: 'title'" },
+      { "commands": ["spo tenant commandset set"], "option": "newClientSideComponentId", "cli": "Invalid option: 'newClientSideComponentId'" },
+      { "commands": ["spo site sharingpermission set"], "option": "url", "cli": "Unrecognized key: \"url\"" },
+      { "commands": ["entra administrativeunit add", "entra multitenant add"], "option": "displayname", "cli": "docs typo for --displayName; lowercase is not accepted" }
+    ]
+  }
+}
