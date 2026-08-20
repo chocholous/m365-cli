@@ -11,39 +11,35 @@ user-invocable: true
 ## Start here
 
 ```bash
-source scripts/env.sh     # loads .env, sets $M
 npm run doctor            # when something breaks: binary, .env, login, SPO reachability
 ```
 
-The environment (account, tenant, SharePoint root) lives in `.env`; `.env.example` names
-the command that discovers each value. `$M` is the local `m365`.
+**Run the pinned binary by its path, never a bare `m365`:**
 
-## Rule: look it up, never guess
+```bash
+./node_modules/.bin/m365 spo web get --url ...
+```
+
+A globally installed `m365` is usually a different version than the pinned one this repo is
+verified against, so its options and its `--help` can differ. A `PreToolUse` hook
+(`.claude/hooks/prefer-lookup.sh`) blocks bare `m365` and says this — it is not a
+suggestion you can skip.
+
+Values from `.env` (account, tenant, SharePoint root) need `source` on the **same command
+line**, because every shell call starts fresh:
+
+```bash
+source scripts/env.sh && ./node_modules/.bin/m365 spo list list --webUrl "$M365_SPO_ROOT"
+```
+
+`.env.example` names the command that discovers each value.
+
+## Rule: Before running m365 command, look it up, never guess
 
 ```bash
 ./lookup spo page add
 ```
 
-```
-m365 spo page add
-
-  Creates modern page
-
-REQUIRED
-  -n, --name <string>
-  -u, --webUrl <string>
-
-OPTIONAL
-  -t, --title <string>
-  -l, --layoutType <Article|Home|SingleWebPartAppPage|RepostPage|...>
-      --publish   (flag, takes no value)
-
-GLOBAL
-      --output <csv|json|md|text|none>
-      --query <JMESPath>
-
-More: --examples --remarks --response
-```
 
 That is the whole interface:
 
@@ -54,9 +50,8 @@ That is the whole interface:
 | `./lookup -f <text>` | search names, aliases and descriptions |
 | `./lookup <command> --examples` | real invocations; also `--remarks`, `--permissions`, `--response` |
 
-It is instant and offline. **Take its output as given** — it already accounts for the
-places where the CLI's own `--help` is wrong, so you do not need to cross-check with
-`m365 <cmd> --help` (which also costs ~2.4 s per call, against ~67 ms here).
+It is instant and offline, and it already corrects the places where the CLI's own `--help`
+is wrong — so **build commands from it, never re-check them against `--help`**.
 
 If a command is not there, it does not exist — check the spelling with `-f`.
 
@@ -70,19 +65,9 @@ Irreversible commands are everywhere (`spo site remove`, `spo list remove`,
 2. Show the user the exact command and what it will do. **Never run a destructive command
    without confirmation.**
 
-**The `-f, --force` trap:** many destructive commands accept it and it suppresses the
+**The m365 `-f, --force` trap:** many destructive commands accept it and it suppresses the
 confirmation prompt. Without it the CLI prompts interactively — and since an agent has no
-TTY, that fails:
-
-```
-? Are you sure you want to remove the list …? (Y/n)
-{"error":{"name":"ExitPromptError"}}          rc=1
-```
-
-That is **fail-safe: the operation did NOT run.** Do not "fix" it by adding `--force` —
-that silently performs it. `ExitPromptError` means *ask the user*, not *bypass the prompt*.
-
-Read commands (`get`, `list`) can be run freely.
+TTY, that fails.
 
 ## Errors: what they actually mean
 
@@ -96,12 +81,12 @@ response is `{"error": …}`.
 | `Attempted to perform an unauthorized operation.` | a missing role (SharePoint admin) | permissions, **not** syntax — do not rewrite the command |
 | `{"error":{"name":"ExitPromptError"}}` | destructive command waiting for confirmation, no TTY | it did not run — **ask the user**, do not add `--force` |
 | `Required option not specified` | a required option is missing | `./lookup <command>` lists them under REQUIRED |
-| empty result | may simply mean not signed in | `npm run doctor` before concluding "there is nothing there" |
+| `[]` or empty with rc=0 | genuinely empty, wrong list/site, or not signed in — these look identical | `npm run doctor` first; then confirm the target exists (`spo list get`, `spo web get`) before reporting "nothing there" |
 
 **Graph scopes ≠ SharePoint scopes.** The app may hold `AllSites.FullControl` on the
 SharePoint resource and still fail on Graph for want of `Files.Read.All` / `Sites.Read.All`.
 What this account actually holds: `m365 cli doctor` (`roles` and `scopes` per resource).
-Check it before building a plan on permissions; consent changes.
+Check it before building a plan on permissions.
 
 ## What this skill does NOT cover
 

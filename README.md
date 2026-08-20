@@ -88,9 +88,12 @@ proving it, in `scripts/verified-exceptions.json`.
 npm install                # installs the pinned CLI for Microsoft 365
 cp .env.example .env       # every value documents the command that discovers it
 $EDITOR .env
-source scripts/env.sh      # loads .env, sets $M
 npm run doctor             # runtime, package contract, .env, login, SharePoint reachability
+./lookup spo page add      # and you are working
 ```
+
+Run the CLI itself by path — `./node_modules/.bin/m365` — so you get the pinned version
+rather than whatever `m365` resolves to on PATH.
 
 ## Pinned on purpose
 
@@ -108,9 +111,28 @@ Not falling back to 'm365 --help' on purpose: it would still work, ~36x slower,
 and nobody would notice.
 ```
 
+## The hook
+
+`.claude/settings.json` registers one `PreToolUse` hook, `.claude/hooks/prefer-lookup.sh`.
+It is ~30 lines of POSIX shell with no dependencies, it only ever returns a decision, and
+it denies exactly two things:
+
+- `m365 <command> --help` / `-h`, **however m365 is invoked** → points at `./lookup`, which
+  is faster and corrects the places the CLI's help is wrong
+- a bare `m365 ...` → points at `./node_modules/.bin/m365`, the pinned version
+
+Running the pinned binary is otherwise untouched. This exists because it was measured: across six agents given read-only tasks in this
+repo, three reached for `m365 --help` (19 calls) before reading anything, and two ran live
+commands through a different globally-installed version without noticing.
+
+Read it before you clone — a hook runs code on your machine, and you should never take
+that on trust.
+
 ## What is in here
 
 ```
+.claude/settings.json              registers the hook below
+.claude/hooks/prefer-lookup.sh     PreToolUse guard, ~30 lines of POSIX sh
 .claude/skills/m365-cli/SKILL.md   the skill: two rules, an error→cause table
 lookup -> scripts/m365-lookup.mjs  the tool (bun shebang, run it directly)
 scripts/lib/                       index building, help sections, the contract check

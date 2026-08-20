@@ -26,5 +26,6 @@ set -a
 set +a
 M="$_m365_root/node_modules/.bin/m365"
 export M
-echo "m365 $("$M" version 2>/dev/null | tr -d '\"')  root=${M365_SPO_ROOT:-<unset>}"
+# stderr, not stdout: env.sh is sourced inside command substitutions too
+echo "m365 $("$M" version 2>/dev/null | tr -d '\"')  root=${M365_SPO_ROOT:-<unset>}" >&2
 unset _m365_root

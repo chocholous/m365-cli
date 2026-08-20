@@ -117,6 +117,23 @@ export function withCallShapes(command) {
   };
 }
 
+/** Last resort for -f: scan the shipped help text. Catches terminology the index does
+ *  not carry -- e.g. "yammer" appears 0x in the command index but throughout the docs of
+ *  the commands that replaced it (viva engage *). Only runs when names/descriptions miss,
+ *  so the fast path stays untouched. */
+export function searchDocs(needle) {
+  const { byName } = loadIndex();
+  const q = needle.toLowerCase();
+  const hits = [];
+  for (const c of byName.values()) {
+    if (!c.help) continue;
+    const file = join(paths.docsCmd, c.help);
+    if (!existsSync(file)) continue;
+    if (readFileSync(file, 'utf8').toLowerCase().includes(q)) hits.push(c.name);
+  }
+  return hits;
+}
+
 export function search(needle) {
   const { names, byName } = loadIndex();
   const q = needle.toLowerCase();
