@@ -125,6 +125,16 @@ Running the pinned binary is otherwise untouched. This exists because it was mea
 repo, three reached for `m365 --help` (19 calls) before reading anything, and two ran live
 commands through a different globally-installed version without noticing.
 
+Both branches are confirmed firing in a session rooted at this repo:
+`m365 --version` and `./node_modules/.bin/m365 spo page add --help` are each refused with
+the message above, and the CLI never starts.
+
+In practice the skill usually gets there first. Re-run on the task that had failed twice —
+"explore what m365 can do with Teams" — an agent loaded the skill, went straight to
+`./lookup teams`, and ran every live command through the pinned path: no `--help`, no bare
+`m365`, so the hook had nothing to refuse. It is the backstop for agents that never read
+the skill, which is exactly how those two failures happened.
+
 Read it before you clone — a hook runs code on your machine, and you should never take
 that on trust.
 

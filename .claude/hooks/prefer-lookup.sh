@@ -28,7 +28,7 @@ deny() {
 
 # 1. help, however m365 was invoked -- ./lookup IS the help in this repo
 if echo "$cmd" | grep -Eq '(^|[[:space:]])(-h|--help)([[:space:]]|$)'; then
-  deny '"./lookup is the help for this repo: run  ./lookup <command>  (e.g. ./lookup spo page add), plus --examples / --remarks / --permissions / --response. It is ~36x faster than m365 --help and it corrects the places where the CLI help is wrong -- option casing, restricted --output values, and options the docs list that the CLI rejects. This applies however m365 is invoked, including the pinned binary by path."'
+  deny '"./lookup is the help for this repo: run  ./lookup <command>  (e.g. ./lookup spo page add), plus --examples / --remarks / --permissions / --response. It is ~36x faster than m365 --help and it corrects the places where the CLI help is wrong -- option casing, restricted --output values, and options the docs list that the CLI rejects."'
 fi
 
 # 2. a bare `m365` resolves through PATH to whatever is installed globally
